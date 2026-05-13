@@ -174,9 +174,21 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
   <div class="oblogo">NEXUS</div>
   <p class="obsub">Твой личный штаб развития.<br>Прокачивай себя как персонажа в игре.</p>
   <div class="obf">
-    <div class="mb16"><label class="ilbl">Твоё имя</label><input id="obn" class="inp" type="text" placeholder="Денис" autocomplete="off"></div>
-    <div class="mb16"><label class="ilbl">Claude API ключ</label><input id="obk" class="inp" type="password" placeholder="sk-ant-api03-..."></div>
-    <button class="btnp" onclick="obDone()">⚡ Начать прокачку</button>
+    <div id="ob-signup">
+      <div class="mb12"><label class="ilbl">Имя</label><input id="obn" class="inp" type="text" placeholder="Денис" autocomplete="off"></div>
+      <div class="mb12"><label class="ilbl">Email</label><input id="obe" class="inp" type="email" placeholder="denis@email.com"></div>
+      <div class="mb12"><label class="ilbl">Пароль</label><input id="obp" class="inp" type="password" placeholder="минимум 6 символов"></div>
+      <div class="mb16"><label class="ilbl">Claude API ключ</label><input id="obk" class="inp" type="password" placeholder="sk-ant-api03-..."></div>
+      <button class="btnp mb12" onclick="obSignUp()">⚡ Создать аккаунт</button>
+      <div style="text-align:center;font-size:13px;color:var(--t2);cursor:pointer" onclick="showLogin()">Уже есть аккаунт? Войти →</div>
+    </div>
+    <div id="ob-login" style="display:none">
+      <div class="mb12"><label class="ilbl">Email</label><input id="oble" class="inp" type="email" placeholder="denis@email.com"></div>
+      <div class="mb16"><label class="ilbl">Пароль</label><input id="oblp" class="inp" type="password" placeholder="пароль"></div>
+      <button class="btnp mb12" onclick="obLogin()">🔑 Войти</button>
+      <div style="text-align:center;font-size:13px;color:var(--t2);cursor:pointer" onclick="showSignup()">Нет аккаунта? Зарегистрироваться →</div>
+    </div>
+    <div id="ob-msg" style="margin-top:12px;text-align:center;font-size:13px;color:var(--pk);display:none"></div>
   </div>
 </div>
 
@@ -259,14 +271,19 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
           <option value="easy">Лёгкая (50xp)</option><option value="medium">Средняя (150xp)</option><option value="hard">Босс (500xp)</option>
         </select>
       </div>
+      <div class="row mb12">
+        <select id="qpr" class="sel"><option value="normal">🟢 Подождёт</option><option value="important">🟡 Важно</option><option value="urgent">🔴 Срочно</option></select>
+        <input id="qdd" class="inp" type="date" style="flex:1">
+      </div>
       <button class="btnp" onclick="aq('qi','qc','qd')">⚔️ Добавить квест</button>
     </div>
     <div class="ftabs">
       <div class="ft on" onclick="sf('all',this)">Все</div>
       <div class="ft" onclick="sf('active',this)">Активные</div>
       <div class="ft" onclick="sf('done',this)">Выполненные</div>
+      <div class="ft" onclick="sf('urgent',this)">🔴 Срочные</div>
+      <div class="ft" onclick="sf('important',this)">🟡 Важные</div>
       <div class="ft" onclick="sf('business',this)">💼</div>
-      <div class="ft" onclick="sf('intelligence',this)">🧠</div>
       <div class="ft" onclick="sf('health',this)">💪</div>
       <div class="ft" onclick="sf('finance',this)">💰</div>
     </div>
@@ -331,7 +348,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
       <input id="mqi" class="inp" type="text" placeholder="Что нужно сделать?" style="flex:1">
       <button class="vb" id="mvb" onclick="tv('mqi','mvb')">🎤</button>
     </div>
-    <div class="row mb16">
+    <div class="row mb12">
       <select id="mqc" class="sel">
         <option value="business">💼 Бизнес</option><option value="intelligence">🧠 Интеллект</option>
         <option value="health">💪 Здоровье</option><option value="discipline">🔥 Дисциплина</option>
@@ -340,6 +357,10 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
       <select id="mqd" class="sel">
         <option value="easy">Лёгкая (50xp)</option><option value="medium">Средняя (150xp)</option><option value="hard">Босс (500xp)</option>
       </select>
+    </div>
+    <div class="row mb16">
+      <select id="mqpr" class="sel"><option value="normal">🟢 Подождёт</option><option value="important">🟡 Важно</option><option value="urgent">🔴 Срочно</option></select>
+      <input id="mqdd" class="inp" type="date" style="flex:1">
     </div>
     <button class="btnp" onclick="aq('mqi','mqc','mqd',true)">⚡ Добавить</button>
   </div>
@@ -353,7 +374,17 @@ const SB_URL='https://kqwjzhhipblfveajbrra.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtxd2p6aGhpcGJsZnZlYWpicnJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2NzQ4NTQsImV4cCI6MjA5NDI1MDg1NH0.KHD5qFucea_M6HxarG4PW65eSj662WCKC0IaDN1XP_c';
 const sb=supabase.createClient(SB_URL,SB_KEY);
 
-function uid(){let id=localStorage.getItem('nx_uid');if(!id){id=crypto.randomUUID();localStorage.setItem('nx_uid',id)}return id}
+function uid(){return localStorage.getItem('nx_uid')||''}
+async function setUid(key){
+  try{
+    const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(key));
+    const hash=Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,32);
+    localStorage.setItem('nx_uid',hash);return hash;
+  }catch{
+    const fb=btoa(key).replace(/[^a-z0-9]/gi,'').slice(0,32).padEnd(32,'0');
+    localStorage.setItem('nx_uid',fb);return fb;
+  }
+}
 
 async function dbSyncUser(){
   try{
@@ -372,7 +403,7 @@ async function dbSyncQuests(){
     const id=uid();
     await sb.from('quests').delete().eq('user_id',id);
     if(D.qs.length){
-      await sb.from('quests').insert(D.qs.map(q=>({id:q.id,user_id:id,title:q.tl,category:q.cat,difficulty:q.dif,done:q.dn,date:q.dt,done_at:q.dat})));
+      await sb.from('quests').insert(D.qs.map(q=>({id:q.id,user_id:id,title:q.tl,category:q.cat,difficulty:q.dif,priority:q.pr||'normal',due_date:q.due||null,done:q.dn,date:q.dt,done_at:q.dat})));
     }
   }catch(e){console.warn('Supabase quests:',e)}
 }
@@ -395,7 +426,7 @@ async function loadMemory(){
 }
 async function autoCreateQuest(userMsg){
   try{
-    const prompt='Пользователь написал коучу: "'+userMsg+'". Определи: это задача/напоминание/дело которое нужно выполнить? Ответь СТРОГО в формате JSON без markdown, одной строкой: {"is_task":true,"title":"краткое название до 5 слов","category":"health","difficulty":"easy"} или {"is_task":false}. Категории только: business, health, discipline, intelligence, finance, creativity. Сложность: easy(простое), medium(важное), hard(большой проект).';
+    const prompt='Пользователь написал коучу: "'+userMsg+'". Определи: это задача/напоминание/дело которое нужно выполнить? Ответь СТРОГО в формате JSON без markdown, одной строкой: {"is_task":true,"title":"краткое название до 5 слов","category":"health","difficulty":"easy","priority":"urgent"} или {"is_task":false}. Категории: business, health, discipline, intelligence, finance, creativity. Сложность: easy/medium/hard. Приоритет: urgent(срочно/сегодня/завтра), important(важно), normal(обычное).';
     const res=await cl([{role:'user',content:prompt}]);
     const clean=res.replace(/```json|```|\n/g,'').trim();
     let parsed;
@@ -408,7 +439,8 @@ async function autoCreateQuest(userMsg){
       const xp={easy:50,medium:150,hard:500};
       const cat=(['business','health','discipline','intelligence','finance','creativity'].includes(parsed.category))?parsed.category:'discipline';
       const dif=(['easy','medium','hard'].includes(parsed.difficulty))?parsed.difficulty:'easy';
-      D.qs.unshift({id:Date.now()+'',tl:parsed.title,cat,dif,dn:false,dt:new Date().toDateString(),dat:null});
+      const pr=(['urgent','important','normal'].includes(parsed.priority))?parsed.priority:'normal';
+      D.qs.unshift({id:Date.now()+'',tl:parsed.title,cat,dif,pr,dd:'',dn:false,dt:new Date().toDateString(),dat:null});
       sv();rql();rtd();
       am('ai','✅ Добавил в квесты: <b>'+parsed.title+'</b> (+'+xp[dif]+' XP)');
       console.log('✅ Quest created:',parsed.title);
@@ -436,6 +468,11 @@ async function updateMemory(msgs){
 
 // ==================== КОНЕЦ SUPABASE ====================
 
+const PR={
+  urgent:{lb:'🔴 Срочно',cl:'#ff4444',bg:'rgba(255,68,68,.1)'},
+  important:{lb:'🟡 Важно',cl:'#ff8c3a',bg:'rgba(255,140,58,.1)'},
+  normal:{lb:'🟢 Обычная',cl:'#4ade80',bg:'rgba(74,222,128,.1)'}
+};
 const SC={business:{ic:'💼',nm:'Бизнес',cl:'#ff8c3a'},intelligence:{ic:'🧠',nm:'Интеллект',cl:'#3dc8ff'},health:{ic:'💪',nm:'Здоровье',cl:'#4ade80'},discipline:{ic:'🔥',nm:'Дисциплина',cl:'#c84bff'},finance:{ic:'💰',nm:'Финансы',cl:'#ffd700'},creativity:{ic:'🎨',nm:'Творчество',cl:'#ff6bcc'}};
 const DC={easy:{lb:'Лёгкая',xp:50,sx:5},medium:{lb:'Средняя',xp:150,sx:15},hard:{lb:'Босс',xp:500,sx:50}};
 const RK=[{a:1,b:10,n:'Новичок',i:'🌱'},{a:11,b:25,n:'Игрок',i:'⚡'},{a:26,b:50,n:'Воин',i:'⚔️'},{a:51,b:75,n:'Мастер',i:'🔥'},{a:76,b:100,n:'Легенда',i:'👑'}];
@@ -452,7 +489,12 @@ const AH=[
 
 function dfl(){return{cfg:{nm:'',key:''},usr:{xp:0,st:0,la:'',dn:0,bs:0},sts:{business:0,intelligence:0,health:0,discipline:0,finance:0,creativity:0},qs:[],tip:{tx:'',dt:''},log:[]}}
 function ld(){try{const r=localStorage.getItem('nx9');return r?Object.assign(dfl(),JSON.parse(r)):dfl()}catch{return dfl()}}
-function sv(){localStorage.setItem('nx9',JSON.stringify(D));setTimeout(()=>{dbSyncUser();dbSyncLog()},500)}
+function sv(){
+  localStorage.setItem('nx9',JSON.stringify(D));
+  // Save API key locally tied to user
+  if(window._authUid&&D.cfg.key)localStorage.setItem('nx_key_'+window._authUid,D.cfg.key);
+  setTimeout(()=>{dbSyncUser();dbSyncLog()},500);
+}
 
 let D=ld(),RC=null,AC=null,CC=null,CF='all';
 let CH=[];
@@ -470,12 +512,53 @@ async function saveCH(){
 }
 const VR={};
 
-function init(){if(!D.cfg.key||!D.cfg.nm){document.getElementById('ob').classList.add('on');return}boot()}
-function obDone(){
-  const n=document.getElementById('obn').value.trim(),k=document.getElementById('obk').value.trim();
-  if(!n||!k){alert('Заполни оба поля!');return}
-  D.cfg.nm=n;D.cfg.key=k;sv();
-  document.getElementById('ob').classList.remove('on');boot();
+async async function init(){
+  if(!D.cfg.key||!D.cfg.nm){document.getElementById('ob').classList.add('on');return}
+  if(!uid()&&D.cfg.key)await setUid(D.cfg.key);
+  boot();
+}
+function showLogin(){document.getElementById('ob-signup').style.display='none';document.getElementById('ob-login').style.display='block'}
+function showSignup(){document.getElementById('ob-signup').style.display='block';document.getElementById('ob-login').style.display='none'}
+function obMsg(t,ok){const el=document.getElementById('ob-msg');el.style.display='block';el.style.color=ok?'var(--gr)':'var(--pk)';el.textContent=t}
+
+async function obSignUp(){
+  const nm=document.getElementById('obn').value.trim();
+  const em=document.getElementById('obe').value.trim();
+  const pw=document.getElementById('obp').value.trim();
+  const key=document.getElementById('obk').value.trim();
+  if(!nm||!em||!pw||!key){obMsg('Заполни все поля!');return}
+  if(pw.length<6){obMsg('Пароль минимум 6 символов');return}
+  obMsg('Создаю аккаунт...',true);
+  const{data,error}=await sb.auth.signUp({email:em,password:pw});
+  if(error){obMsg('Ошибка: '+error.message);return}
+  D.cfg.nm=nm;D.cfg.key=key;sv();
+  obMsg('✅ Аккаунт создан!',true);
+  setTimeout(()=>{document.getElementById('ob').classList.remove('on');boot()},800);
+}
+
+async function obLogin(){
+  const em=document.getElementById('oble').value.trim();
+  const pw=document.getElementById('oblp').value.trim();
+  if(!em||!pw){obMsg('Введи email и пароль');return}
+  obMsg('Вхожу...',true);
+  const{data,error}=await sb.auth.signInWithPassword({email:em,password:pw});
+  if(error){obMsg('Ошибка: '+error.message);return}
+  // Load saved config
+  const{data:ud}=await sb.from('users').select('*').eq('id',data.user.id).single();
+  if(ud){
+    D.cfg.nm=ud.name||'';
+    // Key stored locally only for security
+    const savedKey=localStorage.getItem('nx_key_'+data.user.id);
+    if(savedKey)D.cfg.key=savedKey;
+  }
+  if(!D.cfg.key){
+    // Ask for key if not found
+    const k=prompt('Введи Claude API ключ:');
+    if(k)D.cfg.key=k;
+  }
+  sv();
+  obMsg('✅ Добро пожаловать!',true);
+  setTimeout(()=>{document.getElementById('ob').classList.remove('on');boot()},800);
 }
 async function boot(){
   chkS();rdash();rchar();rql();rana();tipLoad();ug();setInterval(ug,60000);
@@ -559,15 +642,33 @@ function rtd(){
   document.getElementById('tdlist').innerHTML=qs.length?qs.map(qh).join(''):'<div class="empty"><i>🎯</i><p>Нет задач на сегодня.<br>Добавь первую!</p></div>';
 }
 
-function qh(q){
-  const s=SC[q.cat]||SC.discipline,d=DC[q.dif]||DC.easy;
-  return '<div class="qi'+(q.dn?' done':'')+'" onclick="tq(\''+q.id+'\')"><div class="qchk">'+(q.dn?'✓':'')+'</div><div class="qinf"><div class="qt">'+q.tl+'</div><div class="qm"><span class="qd" style="background:'+s.cl+'"></span>'+s.nm+' · '+d.lb+'</div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px"><div class="qxp">+'+d.xp+' XP</div><div style="font-size:15px;opacity:.4;cursor:pointer" onclick="event.stopPropagation();dq(\''+q.id+'\')">🗑</div></div></div>';
+function prBadge(pr){
+  const m={urgent:'<span style="font-size:10px;background:rgba(255,107,107,.15);color:#ff6b6b;border-radius:5px;padding:2px 6px;font-family:Syne,sans-serif;font-weight:700">🔴 СРОЧНО</span>',important:'<span style="font-size:10px;background:rgba(255,215,0,.12);color:#ffd700;border-radius:5px;padding:2px 6px;font-family:Syne,sans-serif;font-weight:700">🟡 ВАЖНО</span>',normal:''};
+  return m[pr]||'';
 }
-
+function ddBadge(dd){
+  if(!dd)return '';
+  const d=new Date(dd+'T00:00:00'),t=new Date();
+  t.setHours(0,0,0,0);
+  const diff=Math.ceil((d-t)/(1000*60*60*24));
+  const color=diff<0?'#ff6b6b':diff<=1?'#ff8c3a':'var(--t2)';
+  const label=diff<0?'Просрочено':diff===0?'Сегодня':diff===1?'Завтра':'Через '+diff+'д';
+  return '<span style="font-size:10px;color:'+color+'">📅 '+label+'</span>';
+}
+function qh(q){
+  const s=SC[q.cat]||SC.discipline,d=DC[q.dif]||DC.easy,p=PR[q.pr||'normal']||PR.normal;
+  const pb=q.pr&&q.pr!=='normal'?prBadge(q.pr):'';
+  const db=q.dd?ddBadge(q.dd):'';
+  const badges=pb||db?'<div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap">'+pb+db+'</div>':'';
+  return '<div class="qi'+(q.dn?' done':'')+'" onclick="tq(''+q.id+'')"><div class="qchk">'+(q.dn?'✓':'')+'</div><div class="qinf"><div class="qt">'+q.tl+'</div><div class="qm"><span class="qd" style="background:'+s.cl+'"></span>'+s.nm+' · '+d.lb+'</div>'+badges+'</div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px"><div class="qxp">+'+d.xp+' XP</div><div style="font-size:15px;opacity:.4;cursor:pointer" onclick="event.stopPropagation();dq(''+q.id+'')">🗑</div></div></div>';
+}
 function aq(ii,ci,di,m){
   const tl=document.getElementById(ii).value.trim();if(!tl)return;
   const cat=document.getElementById(ci).value,dif=document.getElementById(di).value;
-  D.qs.unshift({id:Date.now()+'',tl,cat,dif,dn:false,dt:new Date().toDateString(),dat:null});
+  const prId=m?'mqpr':'qpr', ddId=m?'mqdd':'qdd';
+  const pr=document.getElementById(prId)?.value||'normal';
+  const dd=document.getElementById(ddId)?.value||'';
+  D.qs.unshift({id:Date.now()+'',tl,cat,dif,pr,dd,dn:false,dt:new Date().toDateString(),dat:null});
   document.getElementById(ii).value='';sv();if(m)cov('aov');rql();rtd();
 }
 
@@ -584,11 +685,17 @@ function dq(id){D.qs=D.qs.filter(x=>x.id!==id);sv();rql();rtd()}
 function sf(f,el){
   CF=f;document.querySelectorAll('.ft').forEach(t=>t.classList.remove('on'));el.classList.add('on');rql();
 }
+const PR_ORD={urgent:0,important:1,normal:2};
 function rql(){
   let qs=[...D.qs];
   if(CF==='active')qs=qs.filter(q=>!q.dn);
   else if(CF==='done')qs=qs.filter(q=>q.dn);
   else if(Object.keys(SC).includes(CF))qs=qs.filter(q=>q.cat===CF);
+  // Sort: urgent first, then important, then normal; done tasks last
+  qs.sort((a,b)=>{
+    if(a.dn!==b.dn)return a.dn?1:-1;
+    return (PR_ORD[a.pr||'normal']||2)-(PR_ORD[b.pr||'normal']||2);
+  });
   document.getElementById('qlist').innerHTML=qs.length?qs.map(qh).join(''):'<div class="empty"><i>⚔️</i><p>Квестов нет.<br>Добавь задачу!</p></div>';
 }
 
@@ -716,7 +823,845 @@ function gt(n,el){
 }
 
 function openSet(){document.getElementById('sn').value=D.cfg.nm;document.getElementById('sk').value=D.cfg.key;document.getElementById('sov').classList.add('on')}
-function savSet(){D.cfg.nm=document.getElementById('sn').value.trim();D.cfg.key=document.getElementById('sk').value.trim();sv();cov('sov');ug();document.getElementById('hnm').textContent=D.cfg.nm}
+async function savSet(){D.cfg.nm=document.getElementById('sn').value.trim();D.cfg.key=document.getElementById('sk').value.trim();if(D.cfg.key)await setUid(D.cfg.key);sv();cov('sov');ug();document.getElementById('hnm').textContent=D.cfg.nm}
+function openAdd(){document.getElementById('aov').classList.add('on')}
+function cov(id){document.getElementById(id).classList.remove('on')}
+
+init();
+</script>
+</body>
+</htmlasync function obDone(){
+  const n=document.getElementById('obn').value.trim(),k=document.getElementById('obk').value.trim();
+  if(!n||!k){alert('Заполни оба поля!');return}
+  await setUid(k);
+  D.cfg.nm=n;D.cfg.key=k;sv();
+  document.getElementById('ob').classList.remove('on');boot();
+}!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>NEXUS</title>
+<meta name="theme-color" content="#050507">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="NEXUS">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,400&family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--bg:#050507;--pu:#c84bff;--cy:#3dc8ff;--pk:#ff6bcc;--or:#ff8c3a;--gr:#4ade80;--gd:#ffd700;--tx:#e8e8f0;--t2:#7070a0;--bd:rgba(255,255,255,.06);--c1:rgba(255,255,255,.025);--c2:rgba(255,255,255,.05)}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--tx);font-family:'DM Sans',sans-serif;overflow:hidden;user-select:none}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(200,75,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(200,75,255,.025) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;z-index:0}
+.gl{position:fixed;top:-15%;left:-10%;width:55%;height:55%;background:radial-gradient(circle,rgba(200,75,255,.07) 0%,transparent 70%);pointer-events:none;z-index:0}
+.gr_{position:fixed;bottom:-15%;right:-10%;width:45%;height:45%;background:radial-gradient(circle,rgba(61,200,255,.05) 0%,transparent 70%);pointer-events:none;z-index:0}
+#app{position:relative;z-index:1;height:100%;max-width:430px;margin:0 auto}
+.scr{display:none;overflow-y:auto;padding:16px 16px 100px;height:100%;scrollbar-width:none}
+.scr::-webkit-scrollbar{display:none}
+.scr.on{display:block}
+/* NAV */
+.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:rgba(5,5,7,.93);backdrop-filter:blur(24px);border-top:1px solid var(--bd);display:flex;padding:8px 0 22px;z-index:100}
+.ni{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:6px 4px}
+.nic{font-size:20px;transition:transform .2s,filter .2s}
+.nlb{font-size:9px;font-family:'Syne',sans-serif;font-weight:700;letter-spacing:.08em;color:var(--t2);transition:color .2s}
+.ni.on .nlb{color:var(--pu)}
+.ni.on .nic{transform:scale(1.15);filter:drop-shadow(0 0 6px var(--pu))}
+/* CARDS */
+.card{background:var(--c1);border:1px solid var(--bd);border-radius:16px;padding:16px;margin-bottom:12px}
+.cgp{border-color:rgba(200,75,255,.18)}
+.cgc{border-color:rgba(61,200,255,.18)}
+.cgo{border-color:rgba(255,140,58,.18)}
+/* TYPE */
+.stit{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:20px;background:linear-gradient(135deg,var(--tx),var(--t2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.slbl{font-family:'Syne',sans-serif;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--t2);margin-bottom:10px}
+/* BTN */
+.btnp{width:100%;padding:14px;background:linear-gradient(135deg,var(--pu),var(--cy));border:none;border-radius:12px;color:#fff;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s}
+.btnp:hover{opacity:.9;transform:translateY(-1px)}
+/* INPUTS */
+.inp{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--bd);border-radius:10px;padding:12px 14px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border-color .2s}
+.inp:focus{border-color:rgba(200,75,255,.35)}
+.inp::placeholder{color:var(--t2)}
+.sel{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--bd);border-radius:10px;padding:12px 14px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;appearance:none;cursor:pointer}
+.sel option{background:#0d0d16}
+.ilbl{font-family:'Syne',sans-serif;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--t2);margin-bottom:6px;display:block}
+.row{display:flex;gap:8px}
+.row .sel{flex:1}
+.mb12{margin-bottom:12px}.mb16{margin-bottom:16px}
+/* VOICE BTN */
+.vb{width:44px;height:44px;border-radius:10px;background:rgba(200,75,255,.08);border:1px solid rgba(200,75,255,.18);color:var(--pu);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s}
+.vb.rec{background:rgba(255,107,204,.2);border-color:var(--pk);color:var(--pk);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,107,204,.4)}50%{box-shadow:0 0 0 8px transparent}}
+/* HERO CARD */
+.hcard{background:linear-gradient(135deg,rgba(200,75,255,.08),rgba(61,200,255,.05));border:1px solid rgba(200,75,255,.2);border-radius:20px;padding:20px;margin-bottom:12px;position:relative;overflow:hidden}
+.hcard::before{content:'';position:absolute;top:-30px;right:-30px;width:100px;height:100px;background:radial-gradient(circle,rgba(200,75,255,.12),transparent 70%)}
+.htop{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.hav{width:54px;height:54px;border-radius:16px;background:linear-gradient(135deg,var(--pu),var(--cy));display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;box-shadow:0 0 20px rgba(200,75,255,.35)}
+.hinfo{flex:1}
+.hnm{font-family:'Syne',sans-serif;font-size:16px;font-weight:700}
+.hrk{font-size:12px;color:var(--pu);margin-top:3px}
+.hlvl{background:linear-gradient(135deg,var(--pu),var(--cy));color:#fff;font-family:'Syne',sans-serif;font-size:11px;font-weight:800;padding:4px 11px;border-radius:20px;white-space:nowrap}
+.xlbls{display:flex;justify-content:space-between;margin-bottom:6px}
+.xlbl{font-size:11px;color:var(--t2);font-family:'Syne',sans-serif;font-weight:600}
+.xlbl em{color:var(--pu);font-style:normal}
+.xbar{height:6px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden}
+.xfill{height:100%;background:linear-gradient(90deg,var(--pu),var(--cy));border-radius:3px;transition:width .9s cubic-bezier(.16,1,.3,1);position:relative}
+.xfill::after{content:'';position:absolute;right:0;top:0;height:100%;width:18px;background:rgba(255,255,255,.3);filter:blur(4px)}
+/* STATS MINI */
+.smini{display:flex;gap:6px;margin-bottom:12px}
+.smi{flex:1;background:var(--c1);border:1px solid var(--bd);border-radius:12px;padding:9px 4px;text-align:center}
+.smic{font-size:14px;display:block;margin-bottom:3px}
+.smiv{font-family:'Syne',sans-serif;font-size:13px;font-weight:700}
+.smin_{font-size:8px;color:var(--t2);margin-top:1px}
+/* STREAK */
+.strk{background:linear-gradient(135deg,rgba(255,140,58,.1),rgba(255,107,204,.04));border-color:rgba(255,140,58,.2)!important}
+.strkr{display:flex;align-items:center;gap:12px}
+.flm{font-size:34px;filter:drop-shadow(0 0 8px rgba(255,140,58,.6));animation:fl 2s ease-in-out infinite}
+@keyframes fl{0%,100%{transform:scale(1)}50%{transform:scale(1.08) rotate(-4deg)}}
+.snum{font-family:'Syne',sans-serif;font-size:30px;font-weight:800;color:var(--or);line-height:1}
+.slb_{font-size:12px;color:var(--t2);margin-top:2px}
+/* TIP */
+.tipc{background:linear-gradient(135deg,rgba(61,200,255,.07),rgba(200,75,255,.04));border-color:rgba(61,200,255,.18)!important}
+.tbdg{background:linear-gradient(135deg,var(--cy),var(--pu));font-family:'Syne',sans-serif;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:20px;color:#fff;display:inline-block;margin-bottom:10px}
+.ttxt{font-family:'Cormorant Garamond',serif;font-size:17px;line-height:1.55;font-style:italic}
+.ldg{display:flex;align-items:center;gap:8px;color:var(--t2);font-size:13px}
+/* QUESTS */
+.qi{display:flex;align-items:center;gap:12px;padding:12px;background:var(--c1);border:1px solid var(--bd);border-radius:12px;margin-bottom:8px;cursor:pointer;transition:background .2s,transform .2s}
+.qi:hover{background:var(--c2);transform:translateX(2px)}
+.qi.done{opacity:.42}
+.qi.done .qt{text-decoration:line-through}
+.qchk{width:22px;height:22px;border-radius:6px;border:2px solid var(--bd);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;transition:all .2s}
+.qi.done .qchk{background:var(--pu);border-color:var(--pu);box-shadow:0 0 10px rgba(200,75,255,.35)}
+.qinf{flex:1;min-width:0}
+.qt{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qm{font-size:11px;color:var(--t2);margin-top:2px;display:flex;gap:6px;align-items:center}
+.qd{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.qxp{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--pu);background:rgba(200,75,255,.1);padding:3px 8px;border-radius:7px;white-space:nowrap}
+.qadd{width:100%;padding:13px;background:linear-gradient(135deg,rgba(200,75,255,.08),rgba(61,200,255,.04));border:1px dashed rgba(200,75,255,.25);border-radius:12px;color:var(--pu);font-family:'Syne',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:background .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.qadd:hover{background:rgba(200,75,255,.14)}
+/* FILTER */
+.ftabs{display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.ftabs::-webkit-scrollbar{display:none}
+.ft{padding:6px 14px;border-radius:20px;border:1px solid var(--bd);background:var(--c1);color:var(--t2);font-family:'Syne',sans-serif;font-size:10px;font-weight:700;letter-spacing:.05em;cursor:pointer;white-space:nowrap;transition:all .2s}
+.ft.on{background:var(--pu);border-color:var(--pu);color:#fff}
+/* CHARACTER */
+.stit_{display:flex;align-items:center;gap:12px;padding:12px;background:var(--c1);border:1px solid var(--bd);border-radius:12px;margin-bottom:8px}
+.stic{font-size:20px;width:30px;text-align:center}
+.stif{flex:1}
+.stnm{font-size:13px;font-weight:500;margin-bottom:6px}
+.stbr{height:4px;background:rgba(255,255,255,.07);border-radius:2px;overflow:hidden}
+.stbf{height:100%;border-radius:2px;transition:width .9s cubic-bezier(.16,1,.3,1)}
+.stvl{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;min-width:28px;text-align:right}
+/* ACH */
+.ach{display:flex;align-items:center;gap:12px;padding:12px;background:var(--c1);border:1px solid var(--bd);border-radius:12px;margin-bottom:8px;opacity:.35}
+.ach.on{opacity:1;border-color:rgba(255,215,0,.2)}
+/* COACH */
+.chdr{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.cav{width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,var(--cy),var(--pu));display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 0 20px rgba(61,200,255,.28)}
+.cnm{font-family:'Syne',sans-serif;font-size:16px;font-weight:700}
+.cst{font-size:12px;color:var(--cy);display:flex;align-items:center;gap:4px;margin-top:3px}
+.cdot{width:6px;height:6px;border-radius:50%;background:var(--gr);box-shadow:0 0 6px var(--gr);animation:bk 2s infinite}
+@keyframes bk{0%,100%{opacity:1}50%{opacity:.3}}
+.cwrap{height:calc(100dvh - 290px);overflow-y:auto;scrollbar-width:none;margin-bottom:12px}
+.cwrap::-webkit-scrollbar{display:none}
+.cm{display:flex;gap:8px;margin-bottom:10px;animation:mi .3s ease}
+@keyframes mi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.cm.usr{flex-direction:row-reverse}
+.mbb{max-width:82%;padding:11px 14px;border-radius:16px;font-size:14px;line-height:1.5}
+.cm.ai .mbb{background:rgba(61,200,255,.07);border:1px solid rgba(61,200,255,.13);border-bottom-left-radius:4px}
+.cm.usr .mbb{background:linear-gradient(135deg,rgba(200,75,255,.18),rgba(61,200,255,.08));border:1px solid rgba(200,75,255,.18);border-bottom-right-radius:4px}
+.cinr{display:flex;gap:8px;align-items:flex-end}
+.cinp{flex:1;background:rgba(255,255,255,.04);border:1px solid var(--bd);border-radius:14px;padding:12px 14px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;resize:none;min-height:44px;max-height:100px;transition:border-color .2s}
+.cinp:focus{border-color:rgba(61,200,255,.3)}
+.sndb{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--pu),var(--cy));border:none;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+/* ANALYTICS */
+.chc{background:var(--c1);border:1px solid var(--bd);border-radius:16px;padding:16px;margin-bottom:12px}
+.chtit{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;margin-bottom:14px}
+.chw{position:relative;height:180px}
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.sgi{background:var(--c1);border:1px solid var(--bd);border-radius:14px;padding:14px;text-align:center}
+.sgn{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;line-height:1}
+.sgl{font-size:10px;color:var(--t2);margin-top:5px;letter-spacing:.04em}
+/* MODAL */
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);backdrop-filter:blur(10px);z-index:200;align-items:flex-end;justify-content:center}
+.ov.on{display:flex}
+.modal{background:#0c0c14;border:1px solid var(--bd);border-top:1px solid rgba(255,255,255,.1);border-radius:24px 24px 0 0;padding:24px 20px 44px;width:100%;max-width:430px;animation:mu .32s cubic-bezier(.16,1,.3,1)}
+@keyframes mu{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.mhdl{width:40px;height:4px;background:rgba(255,255,255,.1);border-radius:2px;margin:0 auto 20px}
+.mtit{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;margin-bottom:20px}
+/* ONBOARDING */
+#ob{display:none;position:fixed;inset:0;background:var(--bg);z-index:300;flex-direction:column;align-items:center;justify-content:center;padding:30px 24px}
+#ob.on{display:flex}
+.oblogo{font-family:'Syne',sans-serif;font-size:54px;font-weight:800;letter-spacing:-.04em;background:linear-gradient(135deg,var(--pu),var(--cy));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:6px}
+.obsub{font-size:14px;color:var(--t2);margin-bottom:44px;text-align:center;line-height:1.6}
+.obf{width:100%;max-width:320px}
+/* TOAST */
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-70px);background:linear-gradient(135deg,var(--pu),var(--cy));color:#fff;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;padding:10px 22px;border-radius:20px;z-index:500;transition:transform .4s cubic-bezier(.16,1,.3,1);white-space:nowrap;pointer-events:none}
+.toast.on{transform:translateX(-50%) translateY(0)}
+.sp{width:14px;height:14px;border:2px solid rgba(255,255,255,.1);border-top-color:var(--cy);border-radius:50%;animation:sp .6s linear infinite;display:inline-block;vertical-align:middle}
+@keyframes sp{to{transform:rotate(360deg)}}
+.empty{text-align:center;padding:32px 20px;color:var(--t2)}
+.empty i{font-size:38px;display:block;margin-bottom:10px;font-style:normal}
+.empty p{font-size:13px;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="gl"></div><div class="gr_"></div>
+
+<div id="ob">
+  <div class="oblogo">NEXUS</div>
+  <p class="obsub">Твой личный штаб развития.<br>Прокачивай себя как персонажа в игре.</p>
+  <div class="obf">
+    <div id="ob-signup">
+      <div class="mb12"><label class="ilbl">Имя</label><input id="obn" class="inp" type="text" placeholder="Денис" autocomplete="off"></div>
+      <div class="mb12"><label class="ilbl">Email</label><input id="obe" class="inp" type="email" placeholder="denis@email.com"></div>
+      <div class="mb12"><label class="ilbl">Пароль</label><input id="obp" class="inp" type="password" placeholder="минимум 6 символов"></div>
+      <div class="mb16"><label class="ilbl">Claude API ключ</label><input id="obk" class="inp" type="password" placeholder="sk-ant-api03-..."></div>
+      <button class="btnp mb12" onclick="obSignUp()">⚡ Создать аккаунт</button>
+      <div style="text-align:center;font-size:13px;color:var(--t2);cursor:pointer" onclick="showLogin()">Уже есть аккаунт? Войти →</div>
+    </div>
+    <div id="ob-login" style="display:none">
+      <div class="mb12"><label class="ilbl">Email</label><input id="oble" class="inp" type="email" placeholder="denis@email.com"></div>
+      <div class="mb16"><label class="ilbl">Пароль</label><input id="oblp" class="inp" type="password" placeholder="пароль"></div>
+      <button class="btnp mb12" onclick="obLogin()">🔑 Войти</button>
+      <div style="text-align:center;font-size:13px;color:var(--t2);cursor:pointer" onclick="showSignup()">Нет аккаунта? Зарегистрироваться →</div>
+    </div>
+    <div id="ob-msg" style="margin-top:12px;text-align:center;font-size:13px;color:var(--pk);display:none"></div>
+  </div>
+</div>
+
+<div id="app">
+  <!-- DASHBOARD -->
+  <div class="scr on" id="s-dash">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-top:8px">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;line-height:1.1" id="greet">Доброе утро<span style="display:block;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--t2);margin-top:2px" id="gname">Герой</span></div>
+      <div style="width:40px;height:40px;border-radius:12px;background:var(--c1);border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer" onclick="openSet()">⚙️</div>
+    </div>
+    <div class="hcard">
+      <div class="htop">
+        <div class="hav">🧬</div>
+        <div class="hinfo"><div class="hnm" id="hnm">—</div><div class="hrk" id="hrk">🌱 Новичок</div></div>
+        <div class="hlvl" id="hlvl">LVL 1</div>
+      </div>
+      <div class="xlbls"><div class="xlbl">XP: <em id="hxp">0</em></div><div class="xlbl">До ур.: <em id="hnx">100</em></div></div>
+      <div class="xbar"><div class="xfill" id="xf" style="width:0%"></div></div>
+    </div>
+    <div class="smini" id="smini"></div>
+    <div class="card strk cgo">
+      <div class="strkr">
+        <div class="flm">🔥</div>
+        <div><div class="snum" id="stn">0</div><div class="slb_">дней подряд · стрик</div></div>
+        <div style="margin-left:auto;text-align:right"><div style="font-size:11px;color:var(--t2)">Сегодня</div><div style="font-size:22px;margin-top:3px" id="stod">⬜</div></div>
+      </div>
+    </div>
+    <div class="slbl" style="margin-top:4px">💡 Совет дня</div>
+    <div class="card tipc cgc">
+      <div class="tbdg">AI · Claude</div>
+      <div class="ldg" id="tld"><div class="sp"></div>&nbsp;Генерирую совет...</div>
+      <div class="ttxt" id="ttxt" style="display:none"></div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div class="slbl" style="margin-bottom:0">⚔️ Задачи сегодня</div>
+      <div style="font-size:11px;color:var(--t2)" id="qprog">0/0</div>
+    </div>
+    <div id="tdlist"></div>
+    <button class="qadd" onclick="openAdd()"><span>＋</span><span>Добавить задачу</span></button>
+  </div>
+
+  <!-- CHARACTER -->
+  <div class="scr" id="s-char">
+    <div class="stit">Персонаж</div>
+    <div class="card cgp" style="text-align:center;padding:24px 16px;margin-bottom:16px">
+      <div style="font-size:52px;margin-bottom:12px;filter:drop-shadow(0 0 18px rgba(200,75,255,.45))">🧬</div>
+      <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800" id="cnm">—</div>
+      <div style="color:var(--pu);font-size:13px;margin-top:4px" id="crk">🌱 Новичок</div>
+      <div style="margin-top:16px;display:flex">
+        <div style="flex:1;text-align:center"><div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--cy)" id="clvl">1</div><div style="font-size:9px;color:var(--t2);letter-spacing:.08em">УРОВЕНЬ</div></div>
+        <div style="width:1px;background:var(--bd)"></div>
+        <div style="flex:1;text-align:center"><div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--or)" id="cxp">0</div><div style="font-size:9px;color:var(--t2);letter-spacing:.08em">ВСЕГО XP</div></div>
+        <div style="width:1px;background:var(--bd)"></div>
+        <div style="flex:1;text-align:center"><div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--gr)" id="cdn">0</div><div style="font-size:9px;color:var(--t2);letter-spacing:.08em">ЗАДАЧ</div></div>
+      </div>
+    </div>
+    <div class="slbl">📊 Характеристики</div>
+    <div class="chc mb12"><div class="chw"><canvas id="rcv"></canvas></div></div>
+    <div id="slist"></div>
+    <div class="slbl">🏆 Достижения</div>
+    <div id="alist"></div>
+  </div>
+
+  <!-- QUESTS -->
+  <div class="scr" id="s-quests">
+    <div class="stit">Квесты</div>
+    <div class="card mb16">
+      <div class="slbl" style="margin-bottom:10px">＋ Новый квест</div>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <input id="qi" class="inp" type="text" placeholder="Название задачи..." style="flex:1">
+        <button class="vb" id="vb1" onclick="tv('qi','vb1')">🎤</button>
+      </div>
+      <div class="row mb12">
+        <select id="qc" class="sel">
+          <option value="business">💼 Бизнес</option><option value="intelligence">🧠 Интеллект</option>
+          <option value="health">💪 Здоровье</option><option value="discipline">🔥 Дисциплина</option>
+          <option value="finance">💰 Финансы</option><option value="creativity">🎨 Творчество</option>
+        </select>
+        <select id="qd" class="sel">
+          <option value="easy">Лёгкая (50xp)</option><option value="medium">Средняя (150xp)</option><option value="hard">Босс (500xp)</option>
+        </select>
+      </div>
+      <div class="row mb12">
+        <select id="qpr" class="sel"><option value="normal">🟢 Подождёт</option><option value="important">🟡 Важно</option><option value="urgent">🔴 Срочно</option></select>
+        <input id="qdd" class="inp" type="date" style="flex:1">
+      </div>
+      <button class="btnp" onclick="aq('qi','qc','qd')">⚔️ Добавить квест</button>
+    </div>
+    <div class="ftabs">
+      <div class="ft on" onclick="sf('all',this)">Все</div>
+      <div class="ft" onclick="sf('active',this)">Активные</div>
+      <div class="ft" onclick="sf('done',this)">Выполненные</div>
+      <div class="ft" onclick="sf('urgent',this)">🔴 Срочные</div>
+      <div class="ft" onclick="sf('important',this)">🟡 Важные</div>
+      <div class="ft" onclick="sf('business',this)">💼</div>
+      <div class="ft" onclick="sf('health',this)">💪</div>
+      <div class="ft" onclick="sf('finance',this)">💰</div>
+    </div>
+    <div id="qlist"></div>
+  </div>
+
+  <!-- COACH -->
+  <div class="scr" id="s-coach">
+    <div class="chdr">
+      <div class="cav">🤖</div>
+      <div><div class="cnm">NEXUS AI</div><div class="cst"><div class="cdot"></div>Онлайн · Коуч</div></div>
+    </div>
+    <div class="cwrap" id="cwrap">
+      <div class="cm ai"><div class="mbb">👋 Привет! Я твой AI-коуч. Расскажи о своих целях или задай вопрос — проанализирую и помогу.</div></div>
+    </div>
+    <div class="cinr">
+      <textarea class="cinp" id="cinp" placeholder="Напиши или надиктуй..." rows="1" onkeydown="ck(event)"></textarea>
+      <button class="vb" id="cvb" onclick="tv('cinp','cvb',true)">🎤</button>
+      <button class="sndb" onclick="sc()">➤</button>
+    </div>
+  </div>
+
+  <!-- ANALYTICS -->
+  <div class="scr" id="s-ana">
+    <div class="stit">Аналитика</div>
+    <div class="sgrid">
+      <div class="sgi"><div class="sgn" style="color:var(--pu)" id="at">0</div><div class="sgl">ВСЕГО ЗАДАЧ</div></div>
+      <div class="sgi"><div class="sgn" style="color:var(--cy)" id="ad">0</div><div class="sgl">ВЫПОЛНЕНО</div></div>
+      <div class="sgi"><div class="sgn" style="color:var(--or)" id="as_">0</div><div class="sgl">СТРИК (ДНЕЙ)</div></div>
+      <div class="sgi"><div class="sgn" style="color:var(--pk)" id="al">1</div><div class="sgl">УРОВЕНЬ</div></div>
+    </div>
+    <div class="chc"><div class="chtit">📈 Активность (7 дней)</div><div class="chw"><canvas id="acv"></canvas></div></div>
+    <div class="chc"><div class="chtit">⚡ XP по категориям</div><div class="chw"><canvas id="ccv"></canvas></div></div>
+    <div class="slbl">🤖 AI Анализ недели</div>
+    <div class="card cgc" id="wana"><button class="btnp" onclick="wa()" style="margin:0">📊 Получить анализ</button></div>
+  </div>
+
+  <nav class="nav">
+    <div class="ni on" onclick="gt('dash',this)"><div class="nic">🏠</div><div class="nlb">БАЗА</div></div>
+    <div class="ni" onclick="gt('char',this)"><div class="nic">🧬</div><div class="nlb">ГЕРОЙ</div></div>
+    <div class="ni" onclick="gt('quests',this)"><div class="nic">⚔️</div><div class="nlb">КВЕСТЫ</div></div>
+    <div class="ni" onclick="gt('coach',this)"><div class="nic">🤖</div><div class="nlb">КОУЧ</div></div>
+    <div class="ni" onclick="gt('ana',this)"><div class="nic">📊</div><div class="nlb">СТАТА</div></div>
+  </nav>
+</div>
+
+<!-- SETTINGS -->
+<div class="ov" id="sov" onclick="cov('sov')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="mhdl"></div><div class="mtit">⚙️ Настройки</div>
+    <div class="mb12"><label class="ilbl">Имя</label><input id="sn" class="inp" type="text"></div>
+    <div class="mb16"><label class="ilbl">Claude API ключ</label><input id="sk" class="inp" type="password"></div>
+    <button class="btnp" onclick="savSet()">💾 Сохранить</button>
+  </div>
+</div>
+
+<!-- ADD QUEST -->
+<div class="ov" id="aov" onclick="cov('aov')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="mhdl"></div><div class="mtit">⚔️ Новый квест</div>
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <input id="mqi" class="inp" type="text" placeholder="Что нужно сделать?" style="flex:1">
+      <button class="vb" id="mvb" onclick="tv('mqi','mvb')">🎤</button>
+    </div>
+    <div class="row mb12">
+      <select id="mqc" class="sel">
+        <option value="business">💼 Бизнес</option><option value="intelligence">🧠 Интеллект</option>
+        <option value="health">💪 Здоровье</option><option value="discipline">🔥 Дисциплина</option>
+        <option value="finance">💰 Финансы</option><option value="creativity">🎨 Творчество</option>
+      </select>
+      <select id="mqd" class="sel">
+        <option value="easy">Лёгкая (50xp)</option><option value="medium">Средняя (150xp)</option><option value="hard">Босс (500xp)</option>
+      </select>
+    </div>
+    <div class="row mb16">
+      <select id="mqpr" class="sel"><option value="normal">🟢 Подождёт</option><option value="important">🟡 Важно</option><option value="urgent">🔴 Срочно</option></select>
+      <input id="mqdd" class="inp" type="date" style="flex:1">
+    </div>
+    <button class="btnp" onclick="aq('mqi','mqc','mqd',true)">⚡ Добавить</button>
+  </div>
+</div>
+
+<div class="toast" id="toast">+50 XP</div>
+
+<script>
+// ==================== SUPABASE ====================
+const SB_URL='https://kqwjzhhipblfveajbrra.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtxd2p6aGhpcGJsZnZlYWpicnJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2NzQ4NTQsImV4cCI6MjA5NDI1MDg1NH0.KHD5qFucea_M6HxarG4PW65eSj662WCKC0IaDN1XP_c';
+const sb=supabase.createClient(SB_URL,SB_KEY);
+
+function uid(){return localStorage.getItem('nx_uid')||''}
+async function setUid(key){
+  try{
+    const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(key));
+    const hash=Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,32);
+    localStorage.setItem('nx_uid',hash);return hash;
+  }catch{
+    const fb=btoa(key).replace(/[^a-z0-9]/gi,'').slice(0,32).padEnd(32,'0');
+    localStorage.setItem('nx_uid',fb);return fb;
+  }
+}
+
+async function dbSyncUser(){
+  try{
+    const id=uid();
+    const{data}=await sb.from('users').select('id').eq('id',id).single();
+    if(!data){
+      await sb.from('users').insert({id,name:D.cfg.nm,xp:D.usr.xp,streak:D.usr.st,last_active:D.usr.la,done:D.usr.dn,boss:D.usr.bs,stats:D.sts});
+    } else {
+      await sb.from('users').update({name:D.cfg.nm,xp:D.usr.xp,streak:D.usr.st,last_active:D.usr.la,done:D.usr.dn,boss:D.usr.bs,stats:D.sts}).eq('id',id);
+    }
+  }catch(e){console.warn('Supabase sync:',e)}
+}
+
+async function dbSyncQuests(){
+  try{
+    const id=uid();
+    await sb.from('quests').delete().eq('user_id',id);
+    if(D.qs.length){
+      await sb.from('quests').insert(D.qs.map(q=>({id:q.id,user_id:id,title:q.tl,category:q.cat,difficulty:q.dif,priority:q.pr||'normal',due_date:q.due||null,done:q.dn,date:q.dt,done_at:q.dat})));
+    }
+  }catch(e){console.warn('Supabase quests:',e)}
+}
+
+async function dbSyncLog(){
+  try{
+    const id=uid();
+    if(!D.log.length)return;
+    const last=D.log[D.log.length-1];
+    await sb.from('activity_log').upsert({user_id:id,date:last.dt,xp:last.xp});
+  }catch(e){console.warn('Supabase log:',e)}
+}
+
+let AI_MEM='';
+async function loadMemory(){
+  try{
+    const{data}=await sb.from('ai_memory').select('memory').eq('user_id',uid()).single();
+    AI_MEM=data?.memory||'';
+  }catch{AI_MEM=''}
+}
+async function autoCreateQuest(userMsg){
+  try{
+    const prompt='Пользователь написал коучу: "'+userMsg+'". Определи: это задача/напоминание/дело которое нужно выполнить? Ответь СТРОГО в формате JSON без markdown, одной строкой: {"is_task":true,"title":"краткое название до 5 слов","category":"health","difficulty":"easy","priority":"urgent"} или {"is_task":false}. Категории: business, health, discipline, intelligence, finance, creativity. Сложность: easy/medium/hard. Приоритет: urgent(срочно/сегодня/завтра), important(важно), normal(обычное).';
+    const res=await cl([{role:'user',content:prompt}]);
+    const clean=res.replace(/```json|```|\n/g,'').trim();
+    let parsed;
+    try{parsed=JSON.parse(clean)}catch{
+      // try to extract JSON from response
+      const m=clean.match(/\{.*\}/);
+      if(m)parsed=JSON.parse(m[0]);else return;
+    }
+    if(parsed.is_task&&parsed.title){
+      const xp={easy:50,medium:150,hard:500};
+      const cat=(['business','health','discipline','intelligence','finance','creativity'].includes(parsed.category))?parsed.category:'discipline';
+      const dif=(['easy','medium','hard'].includes(parsed.difficulty))?parsed.difficulty:'easy';
+      const pr=(['urgent','important','normal'].includes(parsed.priority))?parsed.priority:'normal';
+      D.qs.unshift({id:Date.now()+'',tl:parsed.title,cat,dif,pr,dd:'',dn:false,dt:new Date().toDateString(),dat:null});
+      sv();rql();rtd();
+      am('ai','✅ Добавил в квесты: <b>'+parsed.title+'</b> (+'+xp[dif]+' XP)');
+      console.log('✅ Quest created:',parsed.title);
+    }
+  }catch(e){console.warn('autoQuest error:',e.message)}
+}
+
+async function saveMemory(m){
+  try{
+    AI_MEM=m;
+    const res=await sb.from('ai_memory').upsert({user_id:uid(),memory:m,updated_at:new Date().toISOString()});
+    console.log('💾 Supabase upsert result:',res);
+  }catch(e){console.error('❌ Memory save error:',e.message)}
+}
+async function updateMemory(msgs){
+  if(msgs.length<4)return;
+  if(msgs.length!==4&&msgs.length!==8&&msgs.length!==14)return;
+  console.log('🧠 Обновляю память... msgs='+msgs.length);
+  try{
+    const summary=await cl([{role:'user',content:'Проанализируй этот разговор и извлеки ключевые факты о пользователе: его цели, паттерны поведения, слабости, сильные стороны, интересы. Текущая память: "'+AI_MEM+'". Последние сообщения: '+JSON.stringify(msgs.slice(-6))+'. Верни ТОЛЬКО обновлённый текст памяти (не более 400 слов), на русском, без пояснений.'}]);
+    await saveMemory(summary);
+    console.log('✅ Память сохранена в Supabase');
+  }catch(e){console.error('❌ Memory update error:',e)}
+}
+
+// ==================== КОНЕЦ SUPABASE ====================
+
+const PR={
+  urgent:{lb:'🔴 Срочно',cl:'#ff4444',bg:'rgba(255,68,68,.1)'},
+  important:{lb:'🟡 Важно',cl:'#ff8c3a',bg:'rgba(255,140,58,.1)'},
+  normal:{lb:'🟢 Обычная',cl:'#4ade80',bg:'rgba(74,222,128,.1)'}
+};
+const SC={business:{ic:'💼',nm:'Бизнес',cl:'#ff8c3a'},intelligence:{ic:'🧠',nm:'Интеллект',cl:'#3dc8ff'},health:{ic:'💪',nm:'Здоровье',cl:'#4ade80'},discipline:{ic:'🔥',nm:'Дисциплина',cl:'#c84bff'},finance:{ic:'💰',nm:'Финансы',cl:'#ffd700'},creativity:{ic:'🎨',nm:'Творчество',cl:'#ff6bcc'}};
+const DC={easy:{lb:'Лёгкая',xp:50,sx:5},medium:{lb:'Средняя',xp:150,sx:15},hard:{lb:'Босс',xp:500,sx:50}};
+const RK=[{a:1,b:10,n:'Новичок',i:'🌱'},{a:11,b:25,n:'Игрок',i:'⚡'},{a:26,b:50,n:'Воин',i:'⚔️'},{a:51,b:75,n:'Мастер',i:'🔥'},{a:76,b:100,n:'Легенда',i:'👑'}];
+const AH=[
+  {id:'q1',ic:'⚔️',nm:'Первый квест',ds:'Выполни первую задачу',fn:d=>d.dn>=1},
+  {id:'s3',ic:'🔥',nm:'На огне',ds:'Стрик 3 дня подряд',fn:d=>d.st>=3},
+  {id:'s7',ic:'💎',nm:'Неделя силы',ds:'Стрик 7 дней подряд',fn:d=>d.st>=7},
+  {id:'l5',ic:'⭐',nm:'Уровень 5',ds:'Достигни 5 уровня',fn:d=>d.lv>=5},
+  {id:'l10',ic:'🌟',nm:'Двузначный',ds:'Достигни 10 уровня',fn:d=>d.lv>=10},
+  {id:'b1',ic:'💀',nm:'Убийца боссов',ds:'Выполни босс-квест',fn:d=>d.bs>=1},
+  {id:'q10',ic:'🏅',nm:'10 квестов',ds:'Выполни 10 задач',fn:d=>d.dn>=10},
+  {id:'q50',ic:'🥇',nm:'50 квестов',ds:'Выполни 50 задач',fn:d=>d.dn>=50}
+];
+
+function dfl(){return{cfg:{nm:'',key:''},usr:{xp:0,st:0,la:'',dn:0,bs:0},sts:{business:0,intelligence:0,health:0,discipline:0,finance:0,creativity:0},qs:[],tip:{tx:'',dt:''},log:[]}}
+function ld(){try{const r=localStorage.getItem('nx9');return r?Object.assign(dfl(),JSON.parse(r)):dfl()}catch{return dfl()}}
+function sv(){
+  localStorage.setItem('nx9',JSON.stringify(D));
+  // Save API key locally tied to user
+  if(window._authUid&&D.cfg.key)localStorage.setItem('nx_key_'+window._authUid,D.cfg.key);
+  setTimeout(()=>{dbSyncUser();dbSyncLog()},500);
+}
+
+let D=ld(),RC=null,AC=null,CC=null,CF='all';
+let CH=[];
+async function loadCH(){
+  try{
+    const{data}=await sb.from('users').select('chat').eq('id',uid()).single();
+    CH=data?.chat||[];
+    console.log('💬 Чат загружен:',CH.length,'сообщений');
+  }catch(e){CH=[];console.warn('loadCH:',e)}
+}
+async function saveCH(){
+  try{
+    await sb.from('users').update({chat:CH.slice(-40)}).eq('id',uid());
+  }catch(e){console.warn('saveCH:',e)}
+}
+const VR={};
+
+async async function init(){
+  if(!D.cfg.key||!D.cfg.nm){document.getElementById('ob').classList.add('on');return}
+  if(!uid()&&D.cfg.key)await setUid(D.cfg.key);
+  boot();
+}
+function showLogin(){document.getElementById('ob-signup').style.display='none';document.getElementById('ob-login').style.display='block'}
+function showSignup(){document.getElementById('ob-signup').style.display='block';document.getElementById('ob-login').style.display='none'}
+function obMsg(t,ok){const el=document.getElementById('ob-msg');el.style.display='block';el.style.color=ok?'var(--gr)':'var(--pk)';el.textContent=t}
+
+async function obSignUp(){
+  const nm=document.getElementById('obn').value.trim();
+  const em=document.getElementById('obe').value.trim();
+  const pw=document.getElementById('obp').value.trim();
+  const key=document.getElementById('obk').value.trim();
+  if(!nm||!em||!pw||!key){obMsg('Заполни все поля!');return}
+  if(pw.length<6){obMsg('Пароль минимум 6 символов');return}
+  obMsg('Создаю аккаунт...',true);
+  const{data,error}=await sb.auth.signUp({email:em,password:pw});
+  if(error){obMsg('Ошибка: '+error.message);return}
+  D.cfg.nm=nm;D.cfg.key=key;sv();
+  obMsg('✅ Аккаунт создан!',true);
+  setTimeout(()=>{document.getElementById('ob').classList.remove('on');boot()},800);
+}
+
+async function obLogin(){
+  const em=document.getElementById('oble').value.trim();
+  const pw=document.getElementById('oblp').value.trim();
+  if(!em||!pw){obMsg('Введи email и пароль');return}
+  obMsg('Вхожу...',true);
+  const{data,error}=await sb.auth.signInWithPassword({email:em,password:pw});
+  if(error){obMsg('Ошибка: '+error.message);return}
+  // Load saved config
+  const{data:ud}=await sb.from('users').select('*').eq('id',data.user.id).single();
+  if(ud){
+    D.cfg.nm=ud.name||'';
+    // Key stored locally only for security
+    const savedKey=localStorage.getItem('nx_key_'+data.user.id);
+    if(savedKey)D.cfg.key=savedKey;
+  }
+  if(!D.cfg.key){
+    // Ask for key if not found
+    const k=prompt('Введи Claude API ключ:');
+    if(k)D.cfg.key=k;
+  }
+  sv();
+  obMsg('✅ Добро пожаловать!',true);
+  setTimeout(()=>{document.getElementById('ob').classList.remove('on');boot()},800);
+}
+async function boot(){
+  chkS();rdash();rchar();rql();rana();tipLoad();ug();setInterval(ug,60000);
+  console.log('🚀 NEXUS boot, uid='+uid());
+  await dbSyncUser();
+  await loadMemory();
+  await loadCH();
+  console.log('🧠 Memory:',AI_MEM?AI_MEM.length+' chars':'пусто');
+  restoreChat();
+  setTimeout(dbSyncQuests,1000);
+}
+function restoreChat(){
+  if(!CH.length)return;
+  const cw=document.getElementById('cwrap');
+  cw.innerHTML='';
+  // Add welcome back message
+  const d=document.createElement('div');d.className='cm ai';
+  d.innerHTML='<div class="mbb">👋 С возвращением! Продолжаем...</div>';
+  cw.appendChild(d);
+  // Restore last 10 messages
+  CH.slice(-10).forEach(m=>{
+    const d2=document.createElement('div');d2.className='cm '+(m.role==='user'?'usr':'ai');
+    d2.innerHTML='<div class="mbb">'+m.content.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</div>';
+    cw.appendChild(d2);
+  });
+  cw.scrollTop=cw.scrollHeight;
+}
+
+function lvl(x){return Math.floor(Math.sqrt(x/100))+1}
+function x4l(l){return(l-1)*(l-1)*100}
+function rnk(l){return RK.find(r=>l>=r.a&&l<=r.b)||RK[4]}
+
+function chkS(){
+  const t=new Date().toDateString();if(D.usr.la===t)return;
+  const y=new Date();y.setDate(y.getDate()-1);
+  D.usr.st=D.usr.la===y.toDateString()?D.usr.st+1:1;
+  D.usr.la=t;sv();
+}
+
+function gxp(a,cat){
+  D.usr.xp+=a;
+  if(cat)D.sts[cat]=Math.min(100,(D.sts[cat]||0)+(DC[cat]?.sx||5));
+  const t=new Date().toDateString(),e=D.log.find(x=>x.dt===t);
+  if(e)e.xp+=a;else D.log.push({dt:t,xp:a});
+  sv();toast(a);uxp();
+}
+function sxp(c,a){D.sts[c]=Math.min(100,(D.sts[c]||0)+a);sv()}
+
+function toast(a){
+  const t=document.getElementById('toast');t.textContent='+'+a+' XP ⚡';
+  t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2500);
+}
+
+function ug(){
+  const h=new Date().getHours(),g=h<12?'Доброе утро':h<18?'Добрый день':'Добрый вечер';
+  document.getElementById('greet').childNodes[0].textContent=g;
+  document.getElementById('gname').textContent=D.cfg.nm||'Герой';
+}
+
+function uxp(){
+  const l=lvl(D.usr.xp),r=rnk(l),c=x4l(l),n=x4l(l+1),p=Math.min(100,((D.usr.xp-c)/(n-c))*100);
+  document.getElementById('hnm').textContent=D.cfg.nm||'—';
+  document.getElementById('hrk').textContent=r.i+' '+r.n;
+  document.getElementById('hlvl').textContent='LVL '+l;
+  document.getElementById('hxp').textContent=D.usr.xp;
+  document.getElementById('hnx').textContent=n-D.usr.xp;
+  document.getElementById('xf').style.width=p+'%';
+}
+
+function rdash(){
+  uxp();
+  document.getElementById('smini').innerHTML=Object.entries(SC).map(([k,s])=>'<div class="smi"><span class="smic">'+s.ic+'</span><div class="smiv" style="color:'+s.cl+'">'+(D.sts[k]||0)+'</div><div class="smin_">'+s.nm.slice(0,4)+'</div></div>').join('');
+  document.getElementById('stn').textContent=D.usr.st;
+  document.getElementById('stod').textContent=D.usr.la===new Date().toDateString()?'✅':'⬜';
+  rtd();
+}
+
+function rtd(){
+  const t=new Date().toDateString(),qs=D.qs.filter(q=>q.dt===t||!q.dt).slice(0,6),dn=qs.filter(q=>q.dn).length;
+  document.getElementById('qprog').textContent=dn+'/'+qs.length;
+  document.getElementById('tdlist').innerHTML=qs.length?qs.map(qh).join(''):'<div class="empty"><i>🎯</i><p>Нет задач на сегодня.<br>Добавь первую!</p></div>';
+}
+
+function prBadge(pr){
+  const m={urgent:'<span style="font-size:10px;background:rgba(255,107,107,.15);color:#ff6b6b;border-radius:5px;padding:2px 6px;font-family:Syne,sans-serif;font-weight:700">🔴 СРОЧНО</span>',important:'<span style="font-size:10px;background:rgba(255,215,0,.12);color:#ffd700;border-radius:5px;padding:2px 6px;font-family:Syne,sans-serif;font-weight:700">🟡 ВАЖНО</span>',normal:''};
+  return m[pr]||'';
+}
+function ddBadge(dd){
+  if(!dd)return '';
+  const d=new Date(dd+'T00:00:00'),t=new Date();
+  t.setHours(0,0,0,0);
+  const diff=Math.ceil((d-t)/(1000*60*60*24));
+  const color=diff<0?'#ff6b6b':diff<=1?'#ff8c3a':'var(--t2)';
+  const label=diff<0?'Просрочено':diff===0?'Сегодня':diff===1?'Завтра':'Через '+diff+'д';
+  return '<span style="font-size:10px;color:'+color+'">📅 '+label+'</span>';
+}
+function qh(q){
+  const s=SC[q.cat]||SC.discipline,d=DC[q.dif]||DC.easy,p=PR[q.pr||'normal']||PR.normal;
+  const pb=q.pr&&q.pr!=='normal'?prBadge(q.pr):'';
+  const db=q.dd?ddBadge(q.dd):'';
+  const badges=pb||db?'<div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap">'+pb+db+'</div>':'';
+  return '<div class="qi'+(q.dn?' done':'')+'" onclick="tq(''+q.id+'')"><div class="qchk">'+(q.dn?'✓':'')+'</div><div class="qinf"><div class="qt">'+q.tl+'</div><div class="qm"><span class="qd" style="background:'+s.cl+'"></span>'+s.nm+' · '+d.lb+'</div>'+badges+'</div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px"><div class="qxp">+'+d.xp+' XP</div><div style="font-size:15px;opacity:.4;cursor:pointer" onclick="event.stopPropagation();dq(''+q.id+'')">🗑</div></div></div>';
+}
+function aq(ii,ci,di,m){
+  const tl=document.getElementById(ii).value.trim();if(!tl)return;
+  const cat=document.getElementById(ci).value,dif=document.getElementById(di).value;
+  const prId=m?'mqpr':'qpr', ddId=m?'mqdd':'qdd';
+  const pr=document.getElementById(prId)?.value||'normal';
+  const dd=document.getElementById(ddId)?.value||'';
+  D.qs.unshift({id:Date.now()+'',tl,cat,dif,pr,dd,dn:false,dt:new Date().toDateString(),dat:null});
+  document.getElementById(ii).value='';sv();if(m)cov('aov');rql();rtd();
+}
+
+function tq(id){
+  const q=D.qs.find(x=>x.id===id);if(!q)return;
+  q.dn=!q.dn;
+  if(q.dn){const d=DC[q.dif];gxp(d.xp);sxp(q.cat,d.sx);D.usr.dn++;if(q.dif==='hard')D.usr.bs++;q.dat=new Date().toISOString();D.usr.la=new Date().toDateString();}
+  else{D.usr.xp=Math.max(0,D.usr.xp-DC[q.dif].xp);D.usr.dn=Math.max(0,D.usr.dn-1);}
+  sv();rql();rtd();rchar();uas();setTimeout(dbSyncQuests,500);
+}
+
+function dq(id){D.qs=D.qs.filter(x=>x.id!==id);sv();rql();rtd()}
+
+function sf(f,el){
+  CF=f;document.querySelectorAll('.ft').forEach(t=>t.classList.remove('on'));el.classList.add('on');rql();
+}
+const PR_ORD={urgent:0,important:1,normal:2};
+function rql(){
+  let qs=[...D.qs];
+  if(CF==='active')qs=qs.filter(q=>!q.dn);
+  else if(CF==='done')qs=qs.filter(q=>q.dn);
+  else if(Object.keys(SC).includes(CF))qs=qs.filter(q=>q.cat===CF);
+  // Sort: urgent first, then important, then normal; done tasks last
+  qs.sort((a,b)=>{
+    if(a.dn!==b.dn)return a.dn?1:-1;
+    return (PR_ORD[a.pr||'normal']||2)-(PR_ORD[b.pr||'normal']||2);
+  });
+  document.getElementById('qlist').innerHTML=qs.length?qs.map(qh).join(''):'<div class="empty"><i>⚔️</i><p>Квестов нет.<br>Добавь задачу!</p></div>';
+}
+
+function rchar(){
+  const l=lvl(D.usr.xp),r=rnk(l);
+  document.getElementById('cnm').textContent=D.cfg.nm||'—';
+  document.getElementById('crk').textContent=r.i+' '+r.n;
+  document.getElementById('clvl').textContent=l;
+  document.getElementById('cxp').textContent=D.usr.xp;
+  document.getElementById('cdn').textContent=D.usr.dn||0;
+  document.getElementById('slist').innerHTML=Object.entries(SC).map(([k,s])=>{const v=D.sts[k]||0;return'<div class="stit_"><div class="stic">'+s.ic+'</div><div class="stif"><div class="stnm">'+s.nm+'</div><div class="stbr"><div class="stbf" style="width:'+v+'%;background:'+s.cl+'"></div></div></div><div class="stvl" style="color:'+s.cl+'">'+v+'</div></div>'}).join('');
+  const ad={dn:D.usr.dn||0,st:D.usr.st||0,lv:l,bs:D.usr.bs||0};
+  document.getElementById('alist').innerHTML=AH.map(a=>{const on=a.fn(ad);return'<div class="ach'+(on?' on':'')+'"><div style="font-size:24px">'+a.ic+'</div><div><div style="font-size:13px;font-weight:600">'+a.nm+'</div><div style="font-size:11px;color:var(--t2);margin-top:2px">'+a.ds+'</div></div><div style="margin-left:auto">'+(on?'<span style="color:var(--gd)">✓</span>':'<span style="color:var(--t2);font-size:13px">🔒</span>')+'</div></div>'}).join('');
+  rradar();
+}
+
+function rradar(){
+  const ctx=document.getElementById('rcv').getContext('2d');
+  if(RC)RC.destroy();
+  RC=new Chart(ctx,{type:'radar',data:{labels:Object.values(SC).map(s=>s.nm),datasets:[{data:Object.keys(SC).map(k=>D.sts[k]||0),backgroundColor:'rgba(200,75,255,0.08)',borderColor:'#c84bff',borderWidth:2,pointBackgroundColor:Object.values(SC).map(s=>s.cl),pointBorderColor:Object.values(SC).map(s=>s.cl),pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{r:{min:0,max:100,grid:{color:'rgba(255,255,255,0.05)'},angleLines:{color:'rgba(255,255,255,0.05)'},pointLabels:{color:'#7070a0',font:{family:'Syne',size:11,weight:'700'}},ticks:{display:false}}}}});
+}
+
+function rana(){uas();rachart();rcchart()}
+function uas(){
+  const l=lvl(D.usr.xp);
+  document.getElementById('at').textContent=D.qs.length;
+  document.getElementById('ad').textContent=D.qs.filter(q=>q.dn).length;
+  document.getElementById('as_').textContent=D.usr.st;
+  document.getElementById('al').textContent=l;
+}
+function rachart(){
+  const ctx=document.getElementById('acv').getContext('2d'),ds=[],xs=[];
+  for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);ds.push(d.toLocaleDateString('ru',{weekday:'short'}));const e=D.log.find(x=>x.dt===d.toDateString());xs.push(e?e.xp:0)}
+  if(AC)AC.destroy();
+  AC=new Chart(ctx,{type:'bar',data:{labels:ds,datasets:[{data:xs,backgroundColor:c=>{const g=c.chart.ctx.createLinearGradient(0,0,0,180);g.addColorStop(0,'rgba(200,75,255,.8)');g.addColorStop(1,'rgba(61,200,255,.2)');return g},borderRadius:6,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:'#7070a0',font:{family:'Syne',size:10}}},y:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'#7070a0',font:{size:10}}}}}});
+}
+function rcchart(){
+  const ctx=document.getElementById('ccv').getContext('2d'),cx={};
+  Object.keys(SC).forEach(k=>cx[k]=0);
+  D.qs.filter(q=>q.dn).forEach(q=>{const d=DC[q.dif];if(d&&cx[q.cat]!==undefined)cx[q.cat]+=d.xp});
+  if(CC)CC.destroy();
+  CC=new Chart(ctx,{type:'doughnut',data:{labels:Object.values(SC).map(s=>s.nm),datasets:[{data:Object.keys(SC).map(k=>cx[k]),backgroundColor:Object.values(SC).map(s=>s.cl+'50'),borderColor:Object.values(SC).map(s=>s.cl),borderWidth:1.5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:'#7070a0',font:{family:'Syne',size:10},boxWidth:10,padding:8}}}}});
+}
+
+async function tipLoad(){
+  const t=new Date().toDateString();if(D.tip.dt===t&&D.tip.tx){shtip(D.tip.tx);return}
+  try{
+    const l=lvl(D.usr.xp),sr=Object.entries(D.sts).sort((a,b)=>b[1]-a[1]);
+    const top=SC[sr[0][0]]?.nm||'—',low=SC[sr[sr.length-1][0]]?.nm||'—';
+    const tx=await cl([{role:'user',content:'Ты мотивационный коуч. Пользователь: '+D.cfg.nm+', уровень '+l+', сильная сторона: '+top+', слабая: '+low+'. Дай один мощный конкретный совет на сегодня, 2-3 предложения. Без вступлений, сразу суть. На русском.'}]);
+    D.tip={tx,dt:t};sv();shtip(tx);
+  }catch{shtip('Сосредоточься на одном приоритете сегодня. Маленький шаг каждый день создаёт огромные результаты.')}
+}
+function shtip(t){document.getElementById('tld').style.display='none';const e=document.getElementById('ttxt');e.style.display='block';e.textContent=t}
+
+async function wa(){
+  const el=document.getElementById('wana');
+  el.innerHTML='<div class="ldg"><div class="sp"></div>&nbsp;Анализирую данные недели...</div>';
+  try{
+    const l=lvl(D.usr.xp),ss=Object.entries(SC).map(([k,s])=>s.nm+':'+( D.sts[k]||0)).join(',');
+    const wk=D.qs.filter(q=>q.dn&&q.dat&&(Date.now()-new Date(q.dat).getTime())<7*86400000).length;
+    const tx=await cl([{role:'user',content:'Анализируй прогресс '+D.cfg.nm+': уровень '+l+', XP '+D.usr.xp+', стрик '+D.usr.st+'дн, задач за неделю: '+wk+', статы: '+ss+'. Дай анализ (3-4 предложения): что хорошо, что улучшить, фокус на следующую неделю. На русском, без заголовков.'}]);
+    el.innerHTML='<p style="font-family:\'Cormorant Garamond\',serif;font-size:16px;line-height:1.6">'+tx+'</p>';
+  }catch{el.innerHTML='<p style="color:var(--t2)">Ошибка. Проверь API ключ в настройках.</p>'}
+}
+
+async function sc(){
+  const inp=document.getElementById('cinp'),tx=inp.value.trim();if(!tx)return;
+  inp.value='';am('usr',tx);CH.push({role:'user',content:tx});
+  const tid=am('ai','<div class="sp"></div>',true);
+  try{
+    const l=lvl(D.usr.xp),ss=Object.entries(SC).map(([k,s])=>s.nm+':'+(D.sts[k]||0)).join(',');
+    const aq=D.qs.filter(q=>!q.dn).slice(0,4).map(q=>q.tl).join(', ');
+    const memPart=AI_MEM?'\n\nПАМЯТЬ О ПОЛЬЗОВАТЕЛЕ (из прошлых сессий):\n'+AI_MEM:'';
+    const sys='Ты персональный AI-коуч '+D.cfg.nm+'. Данные: уровень '+l+', XP '+D.usr.xp+', стрик '+D.usr.st+'дн. Статы: '+ss+'. Задачи: '+(aq||'нет')+'.'+memPart+'\nОтвечай по-русски, 3-4 предложения, прямо и мотивирующе.';
+    const msgs=CH.slice(-10);
+    const reply=await cl(msgs,sys);
+    CH.push({role:'assistant',content:reply});
+    saveCH();
+    document.getElementById(tid)?.remove();am('ai',reply);
+    updateMemory(CH);
+    autoCreateQuest(tx);
+  }catch(e){document.getElementById(tid)?.remove();am('ai','❌ '+e.message)}
+}
+
+function am(role,html,temp){
+  const cw=document.getElementById('cwrap'),id='m'+Date.now();
+  const d=document.createElement('div');d.className='cm '+role;d.id=id;
+  d.innerHTML='<div class="mbb">'+html+'</div>';cw.appendChild(d);cw.scrollTop=cw.scrollHeight;return id;
+}
+function ck(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sc()}}
+
+async function cl(messages,sys){
+  const key=D.cfg.key;
+  if(!key)throw new Error('Нет API ключа — зайди в ⚙️ Настройки');
+  const body={model:'claude-haiku-4-5-20251001',max_tokens:600,messages};
+  if(sys)body.system=sys;
+  let r;
+  try{
+    r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify(body)});
+  }catch(e){throw new Error('Нет интернета или заблокирован запрос: '+e.message)}
+  if(!r.ok){
+    let msg='HTTP '+r.status;
+    try{const j=await r.json();msg=j.error?.message||msg}catch{}
+    throw new Error(msg);
+  }
+  const data=await r.json();return data.content[0].text;
+}
+
+function tv(ii,bi,as){
+  const btn=document.getElementById(bi),SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){alert('Голосовой ввод работает только в Chrome');return}
+  if(VR[bi]?.a){VR[bi].r.stop();return}
+  const r=new SR();r.lang='ru-RU';r.continuous=false;r.interimResults=false;
+  r.onresult=e=>{document.getElementById(ii).value=e.results[0][0].transcript;VR[bi].a=false;btn.classList.remove('rec');if(as)setTimeout(sc,300)};
+  r.onerror=r.onend=()=>{if(VR[bi])VR[bi].a=false;btn.classList.remove('rec')};
+  r.start();VR[bi]={r,a:true};btn.classList.add('rec');
+}
+
+function gt(n,el){
+  document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));
+  document.querySelectorAll('.ni').forEach(x=>x.classList.remove('on'));
+  document.getElementById('s-'+n).classList.add('on');el.classList.add('on');
+  if(n==='char')rchar();if(n==='ana')rana();
+}
+
+function openSet(){document.getElementById('sn').value=D.cfg.nm;document.getElementById('sk').value=D.cfg.key;document.getElementById('sov').classList.add('on')}
+async function savSet(){D.cfg.nm=document.getElementById('sn').value.trim();D.cfg.key=document.getElementById('sk').value.trim();if(D.cfg.key)await setUid(D.cfg.key);sv();cov('sov');ug();document.getElementById('hnm').textContent=D.cfg.nm}
 function openAdd(){document.getElementById('aov').classList.add('on')}
 function cov(id){document.getElementById(id).classList.remove('on')}
 
