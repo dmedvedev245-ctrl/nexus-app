@@ -393,18 +393,42 @@ async function loadMemory(){
     AI_MEM=data?.memory||'';
   }catch{AI_MEM=''}
 }
+async function autoCreateQuest(userMsg, aiReply){
+  // Keywords that suggest a task/appointment
+  const kw=['завтра','послезавтра','в понедельник','во вторник','в среду','в четверг','в пятницу','в субботу','в воскресенье','запись','врач','встреча','позвонить','купить','сходить','забрать','отправить','оплатить','написать','сделать','напомни','не забыть','нужно','надо'];
+  const text=userMsg.toLowerCase();
+  const hasTask=kw.some(k=>text.includes(k));
+  if(!hasTask)return;
+  try{
+    const res=await cl([{role:'user',content:'Пользователь написал: "'+userMsg+'". Это задача или напоминание? Если да — верни JSON: {"is_task":true,"title":"краткое название","category":"business/health/discipline/intelligence/finance/creativity","difficulty":"easy/medium/hard"}. Если нет — {"is_task":false}. ТОЛЬКО JSON, без пояснений.'}]);
+    const clean=res.replace(/```json|```/g,'').trim();
+    const parsed=JSON.parse(clean);
+    if(parsed.is_task&&parsed.title){
+      const xpMap={easy:50,medium:150,hard:500};
+      D.qs.unshift({id:Date.now()+'',tl:parsed.title,cat:parsed.category||'discipline',dif:parsed.difficulty||'easy',dn:false,dt:new Date().toDateString(),dat:null});
+      sv();rql();rtd();
+      // Show notification in chat
+      am('ai','✅ Создал квест: <strong>'+parsed.title+'</strong> (+'+xpMap[parsed.difficulty||'easy']+' XP)');
+    }
+  }catch(e){console.warn('autoQuest:',e)}
+}
+
 async function saveMemory(m){
   try{
     AI_MEM=m;
-    await sb.from('ai_memory').upsert({user_id:uid(),memory:m,updated_at:new Date().toISOString()});
-  }catch(e){console.warn('Memory save:',e)}
+    const res=await sb.from('ai_memory').upsert({user_id:uid(),memory:m,updated_at:new Date().toISOString()});
+    console.log('💾 Supabase upsert result:',res);
+  }catch(e){console.error('❌ Memory save error:',e.message)}
 }
 async function updateMemory(msgs){
-  if(msgs.length<6||msgs.length%6!==0)return;
+  if(msgs.length<4)return;
+  if(msgs.length!==4&&msgs.length!==8&&msgs.length!==14)return;
+  console.log('🧠 Обновляю память... msgs='+msgs.length);
   try{
-    const summary=await cl([{role:'user',content:'Проанализируй этот разговор и извлеки ключевые факты о пользователе: его паттерны, слабости, сильные стороны, цели, привычки. Текущая память: "'+AI_MEM+'". Разговор: '+JSON.stringify(msgs.slice(-6))+'. Верни ТОЛЬКО обновлённый текст памяти (не более 400 слов), без пояснений.'}]);
+    const summary=await cl([{role:'user',content:'Проанализируй этот разговор и извлеки ключевые факты о пользователе: его цели, паттерны поведения, слабости, сильные стороны, интересы. Текущая память: "'+AI_MEM+'". Последние сообщения: '+JSON.stringify(msgs.slice(-6))+'. Верни ТОЛЬКО обновлённый текст памяти (не более 400 слов), на русском, без пояснений.'}]);
     await saveMemory(summary);
-  }catch(e){console.warn('Memory update:',e)}
+    console.log('✅ Память сохранена в Supabase');
+  }catch(e){console.error('❌ Memory update error:',e)}
 }
 
 // ==================== КОНЕЦ SUPABASE ====================
@@ -427,7 +451,10 @@ function dfl(){return{cfg:{nm:'',key:''},usr:{xp:0,st:0,la:'',dn:0,bs:0},sts:{bu
 function ld(){try{const r=localStorage.getItem('nx9');return r?Object.assign(dfl(),JSON.parse(r)):dfl()}catch{return dfl()}}
 function sv(){localStorage.setItem('nx9',JSON.stringify(D));setTimeout(()=>{dbSyncUser();dbSyncLog()},500)}
 
-let D=ld(),RC=null,AC=null,CC=null,CF='all',CH=[];
+let D=ld(),RC=null,AC=null,CC=null,CF='all';
+function loadCH(){try{return JSON.parse(localStorage.getItem('nx_ch')||'[]')}catch{return[]}}
+function saveCH(){try{localStorage.setItem('nx_ch',JSON.stringify(CH.slice(-30)))}catch{}}
+let CH=loadCH();
 const VR={};
 
 function init(){if(!D.cfg.key||!D.cfg.nm){document.getElementById('ob').classList.add('on');return}boot()}
@@ -437,7 +464,30 @@ function obDone(){
   D.cfg.nm=n;D.cfg.key=k;sv();
   document.getElementById('ob').classList.remove('on');boot();
 }
-async function boot(){chkS();rdash();rchar();rql();rana();tipLoad();ug();setInterval(ug,60000);await loadMemory();setTimeout(()=>{dbSyncUser();dbSyncQuests()},1000)}
+async function boot(){
+  chkS();rdash();rchar();rql();rana();tipLoad();ug();setInterval(ug,60000);
+  console.log('🚀 NEXUS boot, uid='+uid());
+  await loadMemory();
+  console.log('🧠 Memory loaded:',AI_MEM?'есть ('+AI_MEM.length+' chars)':'пусто');
+  restoreChat();
+  setTimeout(()=>{dbSyncUser();dbSyncQuests()},1000);
+}
+function restoreChat(){
+  if(!CH.length)return;
+  const cw=document.getElementById('cwrap');
+  cw.innerHTML='';
+  // Add welcome back message
+  const d=document.createElement('div');d.className='cm ai';
+  d.innerHTML='<div class="mbb">👋 С возвращением! Продолжаем...</div>';
+  cw.appendChild(d);
+  // Restore last 10 messages
+  CH.slice(-10).forEach(m=>{
+    const d2=document.createElement('div');d2.className='cm '+(m.role==='user'?'usr':'ai');
+    d2.innerHTML='<div class="mbb">'+m.content.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</div>';
+    cw.appendChild(d2);
+  });
+  cw.scrollTop=cw.scrollHeight;
+}
 
 function lvl(x){return Math.floor(Math.sqrt(x/100))+1}
 function x4l(l){return(l-1)*(l-1)*100}
