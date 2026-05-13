@@ -647,11 +647,15 @@ async function sc(){
   try{
     const l=lvl(D.usr.xp),ss=Object.entries(SC).map(([k,s])=>s.nm+':'+(D.sts[k]||0)).join(',');
     const aq=D.qs.filter(q=>!q.dn).slice(0,4).map(q=>q.tl).join(', ');
-    const sys='Ты персональный AI-коуч '+D.cfg.nm+'. Данные: уровень '+l+', XP '+D.usr.xp+', стрик '+D.usr.st+'дн. Статы: '+ss+'. Задачи: '+(aq||'нет')+'. Отвечай по-русски, коротко (3-4 предложения), прямо и мотивирующе.';
-    const msgs=CH.slice(-8);
+    const memPart=AI_MEM?'\n\nПАМЯТЬ О ПОЛЬЗОВАТЕЛЕ (из прошлых сессий):\n'+AI_MEM:'';
+    const sys='Ты персональный AI-коуч '+D.cfg.nm+'. Данные: уровень '+l+', XP '+D.usr.xp+', стрик '+D.usr.st+'дн. Статы: '+ss+'. Задачи: '+(aq||'нет')+'.'+memPart+'\nОтвечай по-русски, 3-4 предложения, прямо и мотивирующе.';
+    const msgs=CH.slice(-10);
     const reply=await cl(msgs,sys);
     CH.push({role:'assistant',content:reply});
+    saveCH();
     document.getElementById(tid)?.remove();am('ai',reply);
+    updateMemory(CH);
+    autoCreateQuest(tx);
   }catch(e){document.getElementById(tid)?.remove();am('ai','❌ '+e.message)}
 }
 
