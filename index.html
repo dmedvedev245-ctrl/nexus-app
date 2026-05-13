@@ -407,9 +407,26 @@ async function saveMem(m){
 }
 async function loadChat(){
   try{
-    const{data}=await sb.from('users').select('chat').eq('id',uid()).single();
+    const{data}=await sb.from('users').select('chat,xp,streak,last_active,done,boss,stats').eq('id',uid()).single();
     CH=data?.chat||[];
+    // Restore user stats from Supabase if localStorage was cleared
+    if(data&&D.usr.xp===0&&data.xp>0){
+      D.usr.xp=data.xp||0;D.usr.st=data.streak||0;
+      D.usr.la=data.last_active||'';D.usr.dn=data.done||0;D.usr.bs=data.boss||0;
+      if(data.stats)D.sts=data.stats;
+      sv();
+    }
   }catch{CH=[]}
+}
+async function loadQuests(){
+  if(D.qs.length>0)return; // already have quests in localStorage
+  try{
+    const{data}=await sb.from('quests').select('*').eq('user_id',uid()).order('created_at',{ascending:false});
+    if(data&&data.length>0){
+      D.qs=data.map(q=>({id:q.id,tl:q.title,cat:q.category,dif:q.difficulty,pr:q.priority||'normal',due:q.due_date||'',dn:q.done,dt:q.date,dat:q.done_at}));
+      sv();console.log('✅ Квесты загружены из Supabase:',D.qs.length);
+    }
+  }catch(e){console.warn('loadQuests:',e.message)}
 }
 
 // ============================================================
@@ -433,7 +450,9 @@ async function boot(){
   if(uid()){
     await loadMem();
     await loadChat();
+    await loadQuests();
     restoreChat();
+    rdash();rql();
   }
   tipLoad();
   setTimeout(()=>{dbUser();dbQuests()},800);
