@@ -393,24 +393,27 @@ async function loadMemory(){
     AI_MEM=data?.memory||'';
   }catch{AI_MEM=''}
 }
-async function autoCreateQuest(userMsg, aiReply){
-  // Keywords that suggest a task/appointment
-  const kw=['завтра','послезавтра','в понедельник','во вторник','в среду','в четверг','в пятницу','в субботу','в воскресенье','запись','врач','встреча','позвонить','купить','сходить','забрать','отправить','оплатить','написать','сделать','напомни','не забыть','нужно','надо'];
-  const text=userMsg.toLowerCase();
-  const hasTask=kw.some(k=>text.includes(k));
-  if(!hasTask)return;
+async function autoCreateQuest(userMsg){
   try{
-    const res=await cl([{role:'user',content:'Пользователь написал: "'+userMsg+'". Это задача или напоминание? Если да — верни JSON: {"is_task":true,"title":"краткое название","category":"business/health/discipline/intelligence/finance/creativity","difficulty":"easy/medium/hard"}. Если нет — {"is_task":false}. ТОЛЬКО JSON, без пояснений.'}]);
-    const clean=res.replace(/```json|```/g,'').trim();
-    const parsed=JSON.parse(clean);
-    if(parsed.is_task&&parsed.title){
-      const xpMap={easy:50,medium:150,hard:500};
-      D.qs.unshift({id:Date.now()+'',tl:parsed.title,cat:parsed.category||'discipline',dif:parsed.difficulty||'easy',dn:false,dt:new Date().toDateString(),dat:null});
-      sv();rql();rtd();
-      // Show notification in chat
-      am('ai','✅ Создал квест: <strong>'+parsed.title+'</strong> (+'+xpMap[parsed.difficulty||'easy']+' XP)');
+    const prompt='Пользователь написал коучу: "'+userMsg+'". Определи: это задача/напоминание/дело которое нужно выполнить? Ответь СТРОГО в формате JSON без markdown, одной строкой: {"is_task":true,"title":"краткое название до 5 слов","category":"health","difficulty":"easy"} или {"is_task":false}. Категории только: business, health, discipline, intelligence, finance, creativity. Сложность: easy(простое), medium(важное), hard(большой проект).';
+    const res=await cl([{role:'user',content:prompt}]);
+    const clean=res.replace(/```json|```|\n/g,'').trim();
+    let parsed;
+    try{parsed=JSON.parse(clean)}catch{
+      // try to extract JSON from response
+      const m=clean.match(/\{.*\}/);
+      if(m)parsed=JSON.parse(m[0]);else return;
     }
-  }catch(e){console.warn('autoQuest:',e)}
+    if(parsed.is_task&&parsed.title){
+      const xp={easy:50,medium:150,hard:500};
+      const cat=(['business','health','discipline','intelligence','finance','creativity'].includes(parsed.category))?parsed.category:'discipline';
+      const dif=(['easy','medium','hard'].includes(parsed.difficulty))?parsed.difficulty:'easy';
+      D.qs.unshift({id:Date.now()+'',tl:parsed.title,cat,dif,dn:false,dt:new Date().toDateString(),dat:null});
+      sv();rql();rtd();
+      am('ai','✅ Добавил в квесты: <b>'+parsed.title+'</b> (+'+xp[dif]+' XP)');
+      console.log('✅ Quest created:',parsed.title);
+    }
+  }catch(e){console.warn('autoQuest error:',e.message)}
 }
 
 async function saveMemory(m){
@@ -452,9 +455,19 @@ function ld(){try{const r=localStorage.getItem('nx9');return r?Object.assign(dfl
 function sv(){localStorage.setItem('nx9',JSON.stringify(D));setTimeout(()=>{dbSyncUser();dbSyncLog()},500)}
 
 let D=ld(),RC=null,AC=null,CC=null,CF='all';
-function loadCH(){try{return JSON.parse(localStorage.getItem('nx_ch')||'[]')}catch{return[]}}
-function saveCH(){try{localStorage.setItem('nx_ch',JSON.stringify(CH.slice(-30)))}catch{}}
-let CH=loadCH();
+let CH=[];
+async function loadCH(){
+  try{
+    const{data}=await sb.from('users').select('chat').eq('id',uid()).single();
+    CH=data?.chat||[];
+    console.log('💬 Чат загружен:',CH.length,'сообщений');
+  }catch(e){CH=[];console.warn('loadCH:',e)}
+}
+async function saveCH(){
+  try{
+    await sb.from('users').update({chat:CH.slice(-40)}).eq('id',uid());
+  }catch(e){console.warn('saveCH:',e)}
+}
 const VR={};
 
 function init(){if(!D.cfg.key||!D.cfg.nm){document.getElementById('ob').classList.add('on');return}boot()}
@@ -467,10 +480,12 @@ function obDone(){
 async function boot(){
   chkS();rdash();rchar();rql();rana();tipLoad();ug();setInterval(ug,60000);
   console.log('🚀 NEXUS boot, uid='+uid());
+  await dbSyncUser();
   await loadMemory();
-  console.log('🧠 Memory loaded:',AI_MEM?'есть ('+AI_MEM.length+' chars)':'пусто');
+  await loadCH();
+  console.log('🧠 Memory:',AI_MEM?AI_MEM.length+' chars':'пусто');
   restoreChat();
-  setTimeout(()=>{dbSyncUser();dbSyncQuests()},1000);
+  setTimeout(dbSyncQuests,1000);
 }
 function restoreChat(){
   if(!CH.length)return;
