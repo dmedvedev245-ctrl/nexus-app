@@ -10,6 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="NEXUS">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,400&family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{--bg:#050507;--pu:#c84bff;--cy:#3dc8ff;--pk:#ff6bcc;--or:#ff8c3a;--gr:#4ade80;--gd:#ffd700;--tx:#e8e8f0;--t2:#7070a0;--bd:rgba(255,255,255,.06);--c1:rgba(255,255,255,.025);--c2:rgba(255,255,255,.05)}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -347,6 +348,67 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 <div class="toast" id="toast">+50 XP</div>
 
 <script>
+// ==================== SUPABASE ====================
+const SB_URL='https://kqwjzhhipblfveajbrra.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtxd2p6aGhpcGJsZnZlYWpicnJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2NzQ4NTQsImV4cCI6MjA5NDI1MDg1NH0.KHD5qFucea_M6HxarG4PW65eSj662WCKC0IaDN1XP_c';
+const sb=supabase.createClient(SB_URL,SB_KEY);
+
+function uid(){let id=localStorage.getItem('nx_uid');if(!id){id=crypto.randomUUID();localStorage.setItem('nx_uid',id)}return id}
+
+async function dbSyncUser(){
+  try{
+    const id=uid();
+    const{data}=await sb.from('users').select('id').eq('id',id).single();
+    if(!data){
+      await sb.from('users').insert({id,name:D.cfg.nm,xp:D.usr.xp,streak:D.usr.st,last_active:D.usr.la,done:D.usr.dn,boss:D.usr.bs,stats:D.sts});
+    } else {
+      await sb.from('users').update({name:D.cfg.nm,xp:D.usr.xp,streak:D.usr.st,last_active:D.usr.la,done:D.usr.dn,boss:D.usr.bs,stats:D.sts}).eq('id',id);
+    }
+  }catch(e){console.warn('Supabase sync:',e)}
+}
+
+async function dbSyncQuests(){
+  try{
+    const id=uid();
+    await sb.from('quests').delete().eq('user_id',id);
+    if(D.qs.length){
+      await sb.from('quests').insert(D.qs.map(q=>({id:q.id,user_id:id,title:q.tl,category:q.cat,difficulty:q.dif,done:q.dn,date:q.dt,done_at:q.dat})));
+    }
+  }catch(e){console.warn('Supabase quests:',e)}
+}
+
+async function dbSyncLog(){
+  try{
+    const id=uid();
+    if(!D.log.length)return;
+    const last=D.log[D.log.length-1];
+    await sb.from('activity_log').upsert({user_id:id,date:last.dt,xp:last.xp});
+  }catch(e){console.warn('Supabase log:',e)}
+}
+
+let AI_MEM='';
+async function loadMemory(){
+  try{
+    const{data}=await sb.from('ai_memory').select('memory').eq('user_id',uid()).single();
+    AI_MEM=data?.memory||'';
+  }catch{AI_MEM=''}
+}
+async function saveMemory(m){
+  try{
+    AI_MEM=m;
+    await sb.from('ai_memory').upsert({user_id:uid(),memory:m,updated_at:new Date().toISOString()});
+  }catch(e){console.warn('Memory save:',e)}
+}
+async function updateMemory(msgs){
+  if(msgs.length<6||msgs.length%6!==0)return;
+  try{
+    const summary=await cl([{role:'user',content:'Проанализируй этот разговор и извлеки ключевые факты о пользователе: его паттерны, слабости, сильные стороны, цели, привычки. Текущая память: "'+AI_MEM+'". Разговор: '+JSON.stringify(msgs.slice(-6))+'. Верни ТОЛЬКО обновлённый текст памяти (не более 400 слов), без пояснений.'}]);
+    await saveMemory(summary);
+  }catch(e){console.warn('Memory update:',e)}
+}
+
+// ==================== КОНЕЦ SUPABASE ====================
+
 const SC={business:{ic:'💼',nm:'Бизнес',cl:'#ff8c3a'},intelligence:{ic:'🧠',nm:'Интеллект',cl:'#3dc8ff'},health:{ic:'💪',nm:'Здоровье',cl:'#4ade80'},discipline:{ic:'🔥',nm:'Дисциплина',cl:'#c84bff'},finance:{ic:'💰',nm:'Финансы',cl:'#ffd700'},creativity:{ic:'🎨',nm:'Творчество',cl:'#ff6bcc'}};
 const DC={easy:{lb:'Лёгкая',xp:50,sx:5},medium:{lb:'Средняя',xp:150,sx:15},hard:{lb:'Босс',xp:500,sx:50}};
 const RK=[{a:1,b:10,n:'Новичок',i:'🌱'},{a:11,b:25,n:'Игрок',i:'⚡'},{a:26,b:50,n:'Воин',i:'⚔️'},{a:51,b:75,n:'Мастер',i:'🔥'},{a:76,b:100,n:'Легенда',i:'👑'}];
@@ -363,7 +425,7 @@ const AH=[
 
 function dfl(){return{cfg:{nm:'',key:''},usr:{xp:0,st:0,la:'',dn:0,bs:0},sts:{business:0,intelligence:0,health:0,discipline:0,finance:0,creativity:0},qs:[],tip:{tx:'',dt:''},log:[]}}
 function ld(){try{const r=localStorage.getItem('nx9');return r?Object.assign(dfl(),JSON.parse(r)):dfl()}catch{return dfl()}}
-function sv(){localStorage.setItem('nx9',JSON.stringify(D))}
+function sv(){localStorage.setItem('nx9',JSON.stringify(D));setTimeout(()=>{dbSyncUser();dbSyncLog()},500)}
 
 let D=ld(),RC=null,AC=null,CC=null,CF='all',CH=[];
 const VR={};
@@ -375,7 +437,7 @@ function obDone(){
   D.cfg.nm=n;D.cfg.key=k;sv();
   document.getElementById('ob').classList.remove('on');boot();
 }
-function boot(){chkS();rdash();rchar();rql();rana();tipLoad();ug();setInterval(ug,60000)}
+async function boot(){chkS();rdash();rchar();rql();rana();tipLoad();ug();setInterval(ug,60000);await loadMemory();setTimeout(()=>{dbSyncUser();dbSyncQuests()},1000)}
 
 function lvl(x){return Math.floor(Math.sqrt(x/100))+1}
 function x4l(l){return(l-1)*(l-1)*100}
@@ -449,7 +511,7 @@ function tq(id){
   q.dn=!q.dn;
   if(q.dn){const d=DC[q.dif];gxp(d.xp);sxp(q.cat,d.sx);D.usr.dn++;if(q.dif==='hard')D.usr.bs++;q.dat=new Date().toISOString();D.usr.la=new Date().toDateString();}
   else{D.usr.xp=Math.max(0,D.usr.xp-DC[q.dif].xp);D.usr.dn=Math.max(0,D.usr.dn-1);}
-  sv();rql();rtd();rchar();uas();
+  sv();rql();rtd();rchar();uas();setTimeout(dbSyncQuests,500);
 }
 
 function dq(id){D.qs=D.qs.filter(x=>x.id!==id);sv();rql();rtd()}
