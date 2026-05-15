@@ -126,8 +126,8 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 @keyframes mu{from{transform:translateY(100%)}to{transform:translateY(0)}}
 .mhdl{width:40px;height:4px;background:rgba(255,255,255,.1);border-radius:2px;margin:0 auto 20px}
 .mtit{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;margin-bottom:20px}
-#ob{display:none;position:fixed;inset:0;background:var(--bg);z-index:300;flex-direction:column;align-items:center;justify-content:center;padding:30px 24px}
-#ob.on{display:flex}
+#ob{display:none;position:fixed;inset:0;background:var(--bg);z-index:300;flex-direction:column;align-items:center;justify-content:start;padding:40px 24px 60px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+#ob.on{display:flex;overflow-y:auto;}
 .oblogo{font-family:'Syne',sans-serif;font-size:54px;font-weight:800;letter-spacing:-.04em;background:linear-gradient(135deg,var(--pu),var(--cy));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:6px}
 .obsub{font-size:14px;color:var(--t2);margin-bottom:44px;text-align:center;line-height:1.6}
 .obf{width:100%;max-width:320px}
